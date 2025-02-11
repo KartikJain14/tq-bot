@@ -130,8 +130,14 @@ async def on_member_join(member):
             member.add_roles(oc_role)
         print("No valid invite found!")
         return
-
+    
     participant = participants_collection.find_one({"invite_link": used_invite.url})
+    
+    try:
+        await used_invite.delete()
+    except discord.NotFound:
+        print(f"Invite {used_invite.url} not found on Discord's servers (might already be deleted).")
+
     participant_role = discord.utils.get(member.guild.roles, name="Participants 💻")
 
     if not participant:
@@ -145,11 +151,6 @@ async def on_member_join(member):
         await member.add_roles(participant_role)
 
     await member.edit(nick=f"[🧠] {participant['team_number']} - {participant['name']}")
-
-    try:
-        await used_invite.delete()
-    except discord.NotFound:
-        print(f"Invite {used_invite.url} not found on Discord's servers (might already be deleted).")
 
     await member_handler(member, participant["team_number"])
 
