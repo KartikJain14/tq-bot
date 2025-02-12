@@ -183,7 +183,7 @@ async def on_member_join(member):
 
     await member_handler(member, participant["team_number"])
 
-    participants_collection.delete_one({"invite_link": used_invite.url})
+    participants_collection.delete_one({"invite_link": participant["invite_link"]})
 
 @bot.command()
 async def purge(ctx, amount: int = 10):
