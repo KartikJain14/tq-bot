@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import asyncio
+import sqlite3
+
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -79,6 +82,32 @@ def send_email(to_email, name, team_no, invite_link):
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
 
+def save(to_email, name, team_no, invite_link):
+    # Connect to SQLite database (or create one if it doesn't exist)
+    conn = sqlite3.connect('team_invites.db')
+    cursor = conn.cursor()
+
+    # Create table if it doesn't exist already
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS invites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        to_email TEXT NOT NULL,
+        name TEXT NOT NULL,
+        team_no INTEGER NOT NULL,
+        invite_link TEXT NOT NULL
+    )
+    ''')
+
+    # Insert the provided data into the table
+    cursor.execute('''
+    INSERT INTO invites (to_email, name, team_no, invite_link)
+    VALUES (?, ?, ?, ?)
+    ''', (to_email, name, team_no, invite_link))
+
+    # Commit the transaction and close the connection
+    conn.commit()
+    conn.close()
+
 @bot.command()
 async def register(ctx, name: str = "", email: str="", team_number: str = ""):
     if ctx.channel.id != bot_channel:
@@ -109,7 +138,7 @@ async def register(ctx, name: str = "", email: str="", team_number: str = ""):
     }
     participants_collection.insert_one(participant)
 
-    send_email(to_email=email, name=name, team_no=team_number, invite_link=invite_link)
+    save(to_email=email, name=name, team_no=team_number, invite_link=invite_link)
 
     await ctx.send(f"{name} - {team_number} - `{invite_link}`.")
 
@@ -123,11 +152,11 @@ async def on_member_join(member):
             used_invite = invite
             break
     
-    oc_role = discord.utils.get(member.guild.roles, name="OC 🧙‍♂️")
+    # oc_role = discord.utils.get(member.guild.roles, name="OC 🧙‍♂️")
 
     if not used_invite:
-        if oc_role:
-            member.add_roles(oc_role)
+        # if oc_role:
+        #     member.add_roles(oc_role)
         print("No valid invite found!")
         return
     
@@ -186,6 +215,7 @@ async def on_command_error(ctx, error):
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
+    bot.loop.create_task(delete_used_invites())
 
 async def member_handler(member, team_id):
     channel = await get_or_make_channel(team_id, member.guild)
@@ -270,7 +300,7 @@ async def on_message(message):
                     "invite_link": invite_link
                 }
                 participants_collection.insert_one(participant)
-                send_email(to_email=email, name=name, team_no=team_number, invite_link=invite_link)
+                save(to_email=email, name=name, team_no=team_number, invite_link=invite_link)
                 await message.channel.send(f"{name} - {team_number} - `{invite_link}`.")
             
             except Exception as e:
@@ -279,5 +309,27 @@ async def on_message(message):
 
     # Ensure bot commands still work by processing them after handling the webhook
     await bot.process_commands(message)
+
+async def delete_used_invites():
+    await bot.wait_until_ready()  # Ensure the bot is fully ready before starting
+
+    while True:
+        try:
+            # Get all invites in the server
+            for guild in bot.guilds:
+                invites = await guild.invites()
+
+                for invite in invites:
+                    # Check if the invite was created by the bot and if it has been used more than once
+                    if invite.inviter == bot.user and invite.uses > 1:
+                        # Delete the invite
+                        await invite.delete()
+                        print(f"Deleted invite {invite.url} created by {invite.inviter} with {invite.uses} uses.")
+        except Exception as e:
+            print(f"An error occurred while checking invites: {e}")
+        
+        # Wait for 30 seconds before checking again
+        await asyncio.sleep(30)
+
 
 bot.run(BOT_TOKEN)
