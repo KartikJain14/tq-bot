@@ -6,7 +6,7 @@ Usage:
 
 This bot does:
 1. Give Member the participant role.
-2. Rename the participants as [🧠] <Team ID> - <FName>
+2. Rename the participants as `[🧠] <Team ID> - <FName>`
 3. Create / Edit voice respective team voice channel to give access to the specific channel the participant belongs to. (The voice channels are configured to also allow specific role to view and connect to channels for random inspections)
 
 Why?
