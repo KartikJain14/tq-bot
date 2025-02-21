@@ -1,4 +1,4 @@
-Cusotmised Discord bot for Taqneeq 17.0's Cyber Cypher - NMIMS' official hackathon.
+Customized Discord bot for Taqneeq 17.0's Cyber Cypher - NMIMS' official hackathon.
 This bot handles 1100+ participants that participated for the hackathon.
 
 Usage:
@@ -28,4 +28,4 @@ If the invite code exists in the database, the member is renamed to the correct 
 Then, it checks in respective category if a channel for the member's team id exists? If not, it creates one and initializes with the specific OC role to allow them too.
 After the channel is found / created, it as edited to also allow the current member to view and conenect to that specific channel while the defualt role (@everyone) isn't allow to view or connect.
 
-Featuring [WebApp](https://github.com/KartikJain14/tq-dc-bot-web) where the user is allowed to find their unique invite url.
+Featuring: [WebApp](https://github.com/KartikJain14/tq-dc-bot-web) where the user is allowed to find their unique invite url.
